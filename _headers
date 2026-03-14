@@ -14,3 +14,7 @@
 /*.md
   Content-Type: text/markdown; charset=utf-8
   Cache-Control: public, max-age=300, s-maxage=3600
+
+/templates/*/binaries/*
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=86400, s-maxage=604800
