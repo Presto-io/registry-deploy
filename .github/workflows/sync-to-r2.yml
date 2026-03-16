@@ -124,13 +124,15 @@ jobs:
 
           # Update each template's cdn_url fields
           jq --arg version "$VERSION" --arg domain "$CDN_DOMAIN" '
-            .templates[].platforms |= to_entries | map(
-              .value.cdn_url = "https://" + $domain + "/templates/binaries/" + $version + "/" + .key + "/" + (
-                if .key | startswith("windows") then .value.url | split("/") | last
-                else .value.url | split("/") | last | sub("\\.exe$"; "")
-                end
-              )
-            ) | from_entries
+            .templates[].platforms |= (
+              to_entries | map(
+                .value.cdn_url = "https://" + $domain + "/templates/binaries/" + $version + "/" + .key + "/" + (
+                  if .key | startswith("windows") then .value.url | split("/") | last
+                  else .value.url | split("/") | last | sub("\\.exe$"; "")
+                  end
+                )
+              ) | from_entries
+            )
           ' registry.json.backup > registry.json.new
 
           mv registry.json.new registry.json
