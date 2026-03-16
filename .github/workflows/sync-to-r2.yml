@@ -80,6 +80,15 @@ EOF
         run: |
           echo "☁️  Uploading binaries to R2 bucket: ${R2_BUCKET}"
 
+          # Check if binaries were downloaded
+          if [ -z "$(ls -A /tmp/binaries 2>/dev/null)" ]; then
+            echo "❌ No binaries found in /tmp/binaries"
+            exit 1
+          fi
+
+          echo "📋 Found binaries:"
+          ls -lh /tmp/binaries/
+
           # Upload to R2 with versioned path
           for binary in /tmp/binaries/*; do
             filename=$(basename "$binary")
@@ -89,11 +98,12 @@ EOF
             template=$(echo "$filename" | sed 's/presto-template-//' | sed 's/-darwin-.*//' | sed 's/-linux-.*//' | sed 's/-windows-.*//')
             platform=$(echo "$filename" | sed "s/presto-template-${template}-//" | sed 's/\.exe$//')
 
-            # R2 path: templates/binaries/{version}/{template}/{platform}
-            r2_path="templates/binaries/${VERSION}/${template}/${platform}"
+            # R2 path: templates/binaries/{version}/{template}/
+            # Use copyto to preserve exact filename
+            r2_path="r2:${R2_BUCKET}/templates/binaries/${VERSION}/${template}/${platform}"
 
             echo "⬆️  Uploading $filename → ${r2_path}"
-            rclone copy "$binary" r2:${R2_BUCKET}/${r2_path} --progress
+            rclone copyto "$binary" "$r2_path" --progress
           done
 
           echo "✅ Upload complete"
