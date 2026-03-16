@@ -1,0 +1,179 @@
+name: Sync Binaries to R2 CDN
+
+on:
+  repository_dispatch:
+    types: [release-published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to sync (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  sync-to-r2:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout registry-deploy
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y jq curl
+
+      - name: Setup Cloudflare R2 CLI
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        run: |
+          # Install rclone for R2 operations
+          curl -O https://downloads.rclone.org/rclone-current-linux-amd64.zip
+          unzip rclone-current-linux-amd64.zip
+          sudo mv rclone-*-linux-amd64/rclone /usr/local/bin/
+          sudo chmod +x /usr/local/bin/rclone
+          rm -rf rclone-*
+
+          # Configure rclone for R2
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf <<EOF
+          [r2]
+          type = s3
+          provider = Cloudflare
+          access_key_id = ${R2_ACCESS_KEY_ID}
+          secret_access_key = ${R2_SECRET_ACCESS_KEY}
+          endpoint = https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
+          acl = public-read
+          EOF
+
+      - name: Download binaries from GitHub Release
+        env:
+          VERSION: ${{ github.event.client_payload.version || inputs.version }}
+          SOURCE_REPO: ${{ secrets.SOURCE_REPO || 'Presto-io/presto-official-templates' }}
+        run: |
+          echo "📦 Downloading binaries from release ${VERSION}"
+
+          # Create temp directory
+          mkdir -p /tmp/binaries
+
+          # Get release info
+          RELEASE_URL="https://api.github.com/repos/${SOURCE_REPO}/releases/tags/${VERSION}"
+
+          # Download all assets from the release
+          curl -s "${RELEASE_URL}" | jq -r '.assets[] | select(.name | startswith("presto-template-")) | .browser_download_url' | while read url; do
+            filename=$(basename "$url")
+            echo "⬇️  Downloading $filename"
+            curl -L -o "/tmp/binaries/$filename" "$url"
+          done
+
+          echo "✅ Downloaded $(ls /tmp/binaries | wc -l) binaries"
+
+      - name: Upload binaries to R2
+        env:
+          R2_BUCKET: ${{ secrets.R2_BUCKET || 'presto-cdn' }}
+          VERSION: ${{ github.event.client_payload.version || inputs.version }}
+        run: |
+          echo "☁️  Uploading binaries to R2 bucket: ${R2_BUCKET}"
+
+          # Upload to R2 with versioned path
+          for binary in /tmp/binaries/*; do
+            filename=$(basename "$binary")
+
+            # Parse filename: presto-template-{template}-{platform}[.exe]
+            # Example: presto-template-gongwen-darwin-arm64
+            template=$(echo "$filename" | sed 's/presto-template-//' | sed 's/-darwin-.*//' | sed 's/-linux-.*//' | sed 's/-windows-.*//')
+            platform=$(echo "$filename" | sed "s/presto-template-${template}-//" | sed 's/\.exe$//')
+
+            # R2 path: templates/binaries/{version}/{template}/{platform}
+            r2_path="templates/binaries/${VERSION}/${template}/${platform}"
+
+            echo "⬆️  Uploading $filename → ${r2_path}"
+            rclone copy "$binary" r2:${R2_BUCKET}/${r2_path} --progress
+          done
+
+          echo "✅ Upload complete"
+
+      - name: Update registry.json with CDN URLs
+        env:
+          R2_BUCKET: ${{ secrets.R2_BUCKET || 'presto-cdn' }}
+          CDN_DOMAIN: ${{ secrets.CDN_DOMAIN || 'cdn.presto.c-1o.top' }}
+          VERSION: ${{ github.event.client_payload.version || inputs.version }}
+        run: |
+          echo "📝 Updating registry.json with CDN URLs"
+
+          cd templates
+
+          # Backup registry.json
+          cp registry.json registry.json.backup
+
+          # Update each template's cdn_url fields
+          jq --arg version "$VERSION" --arg domain "$CDN_DOMAIN" '
+            .templates[].platforms |= to_entries | map(
+              .value.cdn_url = "https://" + $domain + "/templates/binaries/" + $version + "/" + .key + "/" + (
+                if .key | startswith("windows") then .value.url | split("/") | last
+                else .value.url | split("/") | last | sub("\\.exe$"; "")
+                end
+              )
+            ) | from_entries
+          ' registry.json.backup > registry.json.new
+
+          mv registry.json.new registry.json
+          rm registry.json.backup
+
+          echo "✅ registry.json updated"
+
+      - name: Commit and push changes
+        env:
+          VERSION: ${{ github.event.client_payload.version || inputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add templates/registry.json
+          git diff --cached --quiet || git commit -m "chore: sync binaries to R2 for ${VERSION}"
+
+          git push
+
+          echo "✅ Changes committed and pushed"
+
+      - name: Verify CDN URLs
+        env:
+          CDN_DOMAIN: ${{ secrets.CDN_DOMAIN || 'cdn.presto.c-1o.top' }}
+          VERSION: ${{ github.event.client_payload.version || inputs.version }}
+        run: |
+          echo "🔍 Verifying CDN URLs are accessible"
+
+          cd templates
+          failed=0
+
+          # Check each cdn_url in registry.json
+          jq -r '.templates[].platforms[].cdn_url' registry.json | while read url; do
+            echo "Testing: $url"
+            status=$(curl -sI "$url" | head -1)
+            if echo "$status" | grep -q "200\|302"; then
+              echo "  ✅ OK"
+            else
+              echo "  ❌ FAILED: $status"
+              echo "$url" >> /tmp/failed_urls.txt
+            fi
+          done
+
+          if [ -f /tmp/failed_urls.txt ]; then
+            echo ""
+            echo "⚠️  Some URLs failed verification:"
+            cat /tmp/failed_urls.txt
+            exit 1
+          fi
+
+          echo "✅ All CDN URLs verified"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf /tmp/binaries
+          rm -f /tmp/failed_urls.txt
