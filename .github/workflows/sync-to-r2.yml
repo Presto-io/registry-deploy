@@ -42,14 +42,14 @@ jobs:
           # Configure rclone for R2
           mkdir -p ~/.config/rclone
           cat > ~/.config/rclone/rclone.conf <<EOF
-          [r2]
-          type = s3
-          provider = Cloudflare
-          access_key_id = ${R2_ACCESS_KEY_ID}
-          secret_access_key = ${R2_SECRET_ACCESS_KEY}
-          endpoint = https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
-          acl = public-read
-          EOF
+[r2]
+type = s3
+provider = Cloudflare
+access_key_id = ${R2_ACCESS_KEY_ID}
+secret_access_key = ${R2_SECRET_ACCESS_KEY}
+endpoint = https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
+acl = public-read
+EOF
 
       - name: Download binaries from GitHub Release
         env:
