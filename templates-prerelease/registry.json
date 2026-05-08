@@ -1,0 +1,196 @@
+{
+  "version": 2,
+  "updatedAt": "2026-05-08T19:18:34Z",
+  "templates": [
+    {
+      "name": "gongwen",
+      "displayName": "类公文模板",
+      "description": "符合 GB/T 9704-2012 标准的类公文排版，支持标题、作者、日期、签名等元素",
+      "version": "1.2.1-beta.2",
+      "author": "Presto-io",
+      "repo": "Presto-io/presto-official-templates",
+      "license": "MIT",
+      "category": "公文",
+      "keywords": [
+        "公文",
+        "通知",
+        "报告",
+        "政府",
+        "GB/T 9704"
+      ],
+      "trust": "official",
+      "manifest_url": "https://presto.c-1o.top/templates-prerelease/gongwen/manifest.json",
+      "manifest_sha256": "ac86f0494ce641061d1ea757b32237796233054afc16975dd929edee7dc597fc",
+      "platforms": {
+        "darwin-arm64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-darwin-arm64",
+          "sha256": "767ff04cd9e913fe8d5f3568e6e9b97fe9dc199683a8b9c8865288ed1645402c",
+          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-darwin-arm64"
+        },
+        "darwin-amd64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-darwin-amd64",
+          "sha256": "b96adf7b5a2cfa67edd0eeafa51eb2a096292f6986598c6fab0f598534d1d2eb",
+          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-darwin-amd64"
+        },
+        "linux-arm64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-linux-arm64",
+          "sha256": "da029df9b85c226b76a2aca23f6b2d2146471edea0655a51d6c0485e552e2e42",
+          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-linux-arm64"
+        },
+        "linux-amd64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-linux-amd64",
+          "sha256": "ca805f323d1f5911918ce732d7a0fde67d8a30270ed9c09a839dfe0001859f66",
+          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-linux-amd64"
+        },
+        "windows-arm64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-windows-arm64.exe",
+          "sha256": "d65341a2a2f7ea36ca155b636d3d55bb07a2a52a64b42a849a3d0ba88b7ce052",
+          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-windows-arm64.exe"
+        },
+        "windows-amd64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-windows-amd64.exe",
+          "sha256": "fe3ae50056a82f1d3e3f9e7f84e566735749365bf4893a1d61f08052d7503d8e",
+          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-windows-amd64.exe"
+        }
+      },
+      "minPrestoVersion": "0.1.0",
+      "requiredFonts": [
+        {
+          "name": "FZXiaoBiaoSong-B05",
+          "displayName": "方正小标宋",
+          "url": "https://www.foundertype.com/index.php/FontInfo/index/id/164"
+        },
+        {
+          "name": "STHeiti",
+          "displayName": "华文黑体",
+          "url": "https://www.foundertype.com/index.php/FontInfo/index/id/131"
+        },
+        {
+          "name": "STFangsong",
+          "displayName": "华文仿宋",
+          "url": "https://www.foundertype.com/index.php/FontInfo/index/id/128"
+        },
+        {
+          "name": "STKaiti",
+          "displayName": "华文楷体",
+          "url": "https://www.foundertype.com/index.php/FontInfo/index/id/130"
+        },
+        {
+          "name": "STSong",
+          "displayName": "华文宋体",
+          "url": "https://www.foundertype.com/index.php/FontInfo/index/id/135"
+        }
+      ],
+      "frontmatterSchema": {
+        "title": {
+          "type": "string",
+          "default": "请输入文字"
+        },
+        "author": {
+          "type": "string",
+          "default": "请输入文字"
+        },
+        "date": {
+          "type": "string",
+          "format": "YYYY-MM-DD"
+        },
+        "signature": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "runtimes": [],
+      "previewImages": [
+        "gongwen/preview-1.svg",
+        "gongwen/preview-2.svg",
+        "gongwen/preview-3.svg"
+      ]
+    },
+    {
+      "name": "jiaoan-shicao",
+      "displayName": "实操教案模板",
+      "description": "将 Markdown 格式的实操教案转换为标准表格排版",
+      "version": "1.2.1",
+      "author": "Presto-io",
+      "repo": "Presto-io/presto-official-templates",
+      "license": "MIT",
+      "category": "教育",
+      "keywords": [
+        "教案",
+        "实操",
+        "教学",
+        "表格",
+        "教育"
+      ],
+      "trust": "official",
+      "manifest_url": "https://presto.c-1o.top/templates/jiaoan-shicao/manifest.json",
+      "manifest_sha256": "de4457b200234c990916ca4fd29360ca48268e67febc7016c797079517d4402e",
+      "platforms": {
+        "darwin-arm64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/v1.2.1/presto-template-jiaoan-shicao-darwin-arm64",
+          "sha256": "1862547823fcfd0bc55b16b26a453c786a44e6518ed6f35176dd774c40afe60b",
+          "cdn_url": "https://presto.c-1o.top/templates/jiaoan-shicao/binaries/presto-template-jiaoan-shicao-darwin-arm64"
+        },
+        "darwin-amd64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/v1.2.1/presto-template-jiaoan-shicao-darwin-amd64",
+          "sha256": "070b55efa858d74c7aa7c68d04e428d0db53b8592447371fc07d2cfb943197fc",
+          "cdn_url": "https://presto.c-1o.top/templates/jiaoan-shicao/binaries/presto-template-jiaoan-shicao-darwin-amd64"
+        },
+        "linux-arm64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/v1.2.1/presto-template-jiaoan-shicao-linux-arm64",
+          "sha256": "2ab107d17639d5e0254f7f528adda3b8d05914fc6359479ce102ea3a07da14cb",
+          "cdn_url": "https://presto.c-1o.top/templates/jiaoan-shicao/binaries/presto-template-jiaoan-shicao-linux-arm64"
+        },
+        "linux-amd64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/v1.2.1/presto-template-jiaoan-shicao-linux-amd64",
+          "sha256": "559a8bc620e293b24a5273eae2ecfc7a7a048be04a0a15ca19a44e2877c045ad",
+          "cdn_url": "https://presto.c-1o.top/templates/jiaoan-shicao/binaries/presto-template-jiaoan-shicao-linux-amd64"
+        },
+        "windows-arm64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/v1.2.1/presto-template-jiaoan-shicao-windows-arm64.exe",
+          "sha256": "99325b0b820c077575ee36d521a8d0cdcde1d4d83559b320f8bcfbceb6edd592",
+          "cdn_url": "https://presto.c-1o.top/templates/jiaoan-shicao/binaries/presto-template-jiaoan-shicao-windows-arm64.exe"
+        },
+        "windows-amd64": {
+          "url": "https://github.com/Presto-io/presto-official-templates/releases/download/v1.2.1/presto-template-jiaoan-shicao-windows-amd64.exe",
+          "sha256": "61fb651200cf868bbf356ab09c84c7451adc4357629590ae591f4f5617625834",
+          "cdn_url": "https://presto.c-1o.top/templates/jiaoan-shicao/binaries/presto-template-jiaoan-shicao-windows-amd64.exe"
+        }
+      },
+      "minPrestoVersion": "0.1.0",
+      "requiredFonts": [
+        {
+          "name": "FZXiaoBiaoSong-B05",
+          "displayName": "方正小标宋",
+          "url": "https://www.foundertype.com/index.php/FontInfo/index/id/164"
+        },
+        {
+          "name": "STHeiti",
+          "displayName": "华文黑体",
+          "url": "https://www.foundertype.com/index.php/FontInfo/index/id/131"
+        },
+        {
+          "name": "STFangsong",
+          "displayName": "华文仿宋",
+          "url": "https://www.foundertype.com/index.php/FontInfo/index/id/128"
+        },
+        {
+          "name": "STKaiti",
+          "displayName": "华文楷体",
+          "url": "https://www.foundertype.com/index.php/FontInfo/index/id/130"
+        },
+        {
+          "name": "STSong",
+          "displayName": "华文宋体",
+          "url": "https://www.foundertype.com/index.php/FontInfo/index/id/135"
+        }
+      ],
+      "frontmatterSchema": {},
+      "runtimes": [],
+      "previewImages": [
+        "jiaoan-shicao/preview-1.svg",
+        "jiaoan-shicao/preview-2.svg"
+      ]
+    }
+  ]
+}
