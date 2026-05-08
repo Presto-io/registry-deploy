@@ -25,32 +25,32 @@
         "darwin-arm64": {
           "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-darwin-arm64",
           "sha256": "767ff04cd9e913fe8d5f3568e6e9b97fe9dc199683a8b9c8865288ed1645402c",
-          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-darwin-arm64"
+          "cdn_url": "https://cdn.presto.c-1o.top/templates-prerelease/binaries/v1.2.1-beta.2/gongwen/darwin-arm64"
         },
         "darwin-amd64": {
           "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-darwin-amd64",
           "sha256": "b96adf7b5a2cfa67edd0eeafa51eb2a096292f6986598c6fab0f598534d1d2eb",
-          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-darwin-amd64"
+          "cdn_url": "https://cdn.presto.c-1o.top/templates-prerelease/binaries/v1.2.1-beta.2/gongwen/darwin-amd64"
         },
         "linux-arm64": {
           "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-linux-arm64",
           "sha256": "da029df9b85c226b76a2aca23f6b2d2146471edea0655a51d6c0485e552e2e42",
-          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-linux-arm64"
+          "cdn_url": "https://cdn.presto.c-1o.top/templates-prerelease/binaries/v1.2.1-beta.2/gongwen/linux-arm64"
         },
         "linux-amd64": {
           "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-linux-amd64",
           "sha256": "ca805f323d1f5911918ce732d7a0fde67d8a30270ed9c09a839dfe0001859f66",
-          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-linux-amd64"
+          "cdn_url": "https://cdn.presto.c-1o.top/templates-prerelease/binaries/v1.2.1-beta.2/gongwen/linux-amd64"
         },
         "windows-arm64": {
           "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-windows-arm64.exe",
           "sha256": "d65341a2a2f7ea36ca155b636d3d55bb07a2a52a64b42a849a3d0ba88b7ce052",
-          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-windows-arm64.exe"
+          "cdn_url": "https://cdn.presto.c-1o.top/templates-prerelease/binaries/v1.2.1-beta.2/gongwen/windows-arm64"
         },
         "windows-amd64": {
           "url": "https://github.com/Presto-io/presto-official-templates/releases/download/gongwen-v1.2.1-beta.2/presto-template-gongwen-windows-amd64.exe",
           "sha256": "fe3ae50056a82f1d3e3f9e7f84e566735749365bf4893a1d61f08052d7503d8e",
-          "cdn_url": "https://presto.c-1o.top/templates-prerelease/gongwen/binaries/presto-template-gongwen-windows-amd64.exe"
+          "cdn_url": "https://cdn.presto.c-1o.top/templates-prerelease/binaries/v1.2.1-beta.2/gongwen/windows-amd64"
         }
       },
       "minPrestoVersion": "0.1.0",
