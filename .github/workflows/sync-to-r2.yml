@@ -17,6 +17,14 @@ on:
         description: 'Release tag to download (optional, e.g., gongwen-v1.2.1)'
         required: false
         type: string
+      channel:
+        description: 'Registry channel: production or prerelease'
+        required: false
+        type: choice
+        default: production
+        options:
+          - production
+          - prerelease
 
 jobs:
   sync-to-r2:
@@ -32,10 +40,12 @@ jobs:
           PAYLOAD_TEMPLATE: ${{ github.event.client_payload.template || inputs.template }}
           PAYLOAD_VERSION: ${{ github.event.client_payload.version || inputs.version }}
           PAYLOAD_TAG: ${{ github.event.client_payload.tag || inputs.tag }}
+          PAYLOAD_CHANNEL: ${{ github.event.client_payload.channel || inputs.channel || 'production' }}
         run: |
           TEMPLATE="${PAYLOAD_TEMPLATE}"
           VERSION="${PAYLOAD_VERSION#v}"
           TAG="${PAYLOAD_TAG}"
+          CHANNEL="${PAYLOAD_CHANNEL}"
           if [ -z "${TAG}" ]; then
             TAG="${TEMPLATE}-v${VERSION}"
           fi
@@ -48,12 +58,29 @@ jobs:
             echo "Invalid template version: ${VERSION}" >&2
             exit 1
           fi
+          case "${CHANNEL}" in
+            production)
+              REGISTRY_DIR="templates"
+              R2_PREFIX="templates/binaries"
+              ;;
+            prerelease)
+              REGISTRY_DIR="templates-prerelease"
+              R2_PREFIX="templates-prerelease/binaries"
+              ;;
+            *)
+              echo "Invalid registry channel: ${CHANNEL}" >&2
+              exit 1
+              ;;
+          esac
 
           {
             echo "template=${TEMPLATE}"
             echo "version=${VERSION}"
             echo "version_path=v${VERSION}"
             echo "tag=${TAG}"
+            echo "channel=${CHANNEL}"
+            echo "registry_dir=${REGISTRY_DIR}"
+            echo "r2_prefix=${R2_PREFIX}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout registry-deploy
@@ -119,6 +146,7 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET || 'presto-cdn' }}
           TEMPLATE: ${{ steps.release.outputs.template }}
           VERSION_PATH: ${{ steps.release.outputs.version_path }}
+          R2_PREFIX: ${{ steps.release.outputs.r2_prefix }}
         run: |
           echo "Uploading ${TEMPLATE} binaries to R2 bucket: ${R2_BUCKET}"
           ls -lh /tmp/binaries/
@@ -128,7 +156,7 @@ jobs:
             prefix="presto-template-${TEMPLATE}-"
             platform="${filename#"$prefix"}"
             platform="${platform%.exe}"
-            r2_path="r2:${R2_BUCKET}/templates/binaries/${VERSION_PATH}/${TEMPLATE}/${platform}"
+            r2_path="r2:${R2_BUCKET}/${R2_PREFIX}/${VERSION_PATH}/${TEMPLATE}/${platform}"
 
             echo "Uploading ${filename} -> ${r2_path}"
             rclone copyto "$binary" "$r2_path" --progress
@@ -139,19 +167,21 @@ jobs:
           CDN_DOMAIN: ${{ secrets.CDN_DOMAIN || 'cdn.presto.c-1o.top' }}
           TEMPLATE: ${{ steps.release.outputs.template }}
           VERSION_PATH: ${{ steps.release.outputs.version_path }}
+          REGISTRY_DIR: ${{ steps.release.outputs.registry_dir }}
+          R2_PREFIX: ${{ steps.release.outputs.r2_prefix }}
         run: |
           echo "Updating CDN URLs for ${TEMPLATE}"
-          cd templates
+          cd "${REGISTRY_DIR}"
           cp registry.json registry.json.backup
-          git show HEAD^:templates/registry.json > registry.previous.json 2>/dev/null || cp registry.json registry.previous.json
+          git show "HEAD^:${REGISTRY_DIR}/registry.json" > registry.previous.json 2>/dev/null || cp registry.json registry.previous.json
 
-          jq --arg template "$TEMPLATE" --arg version "$VERSION_PATH" --arg domain "$CDN_DOMAIN" --slurpfile previous registry.previous.json '
+          jq --arg template "$TEMPLATE" --arg version "$VERSION_PATH" --arg domain "$CDN_DOMAIN" --arg prefix "$R2_PREFIX" --slurpfile previous registry.previous.json '
             ($previous[0].templates // []) as $old_templates |
             .templates |= map(
               if .name == $template then
                 .platforms |= (
                   to_entries | map(
-                    .value.cdn_url = "https://" + $domain + "/templates/binaries/" + $version + "/" + $template + "/" + .key
+                    .value.cdn_url = "https://" + $domain + "/" + $prefix + "/" + $version + "/" + $template + "/" + .key
                   ) | from_entries
                 )
               else
@@ -182,20 +212,23 @@ jobs:
         env:
           TEMPLATE: ${{ steps.release.outputs.template }}
           VERSION: ${{ steps.release.outputs.version }}
+          REGISTRY_DIR: ${{ steps.release.outputs.registry_dir }}
+          CHANNEL: ${{ steps.release.outputs.channel }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add templates/registry.json
-          git diff --cached --quiet || git commit -m "chore: sync ${TEMPLATE} binaries to R2 for v${VERSION}"
+          git add "${REGISTRY_DIR}/registry.json"
+          git diff --cached --quiet || git commit -m "chore: sync ${CHANNEL} ${TEMPLATE} binaries to R2 for v${VERSION}"
           git push
 
       - name: Verify CDN URLs
         env:
           TEMPLATE: ${{ steps.release.outputs.template }}
+          REGISTRY_DIR: ${{ steps.release.outputs.registry_dir }}
         run: |
           echo "Verifying CDN URLs for ${TEMPLATE}"
-          cd templates
+          cd "${REGISTRY_DIR}"
 
           jq -r --arg template "$TEMPLATE" '.templates[] | select(.name == $template) | .platforms[].cdn_url' registry.json \
             | while read -r url; do

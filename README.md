@@ -15,6 +15,10 @@ templates/              ← template-registry CI 推送
     manifest.json, README.md, example.md, preview-*.svg, hero-frame-*.svg
   jiaoan-shicao/
     manifest.json, README.md, example.md, preview-*.svg
+templates-prerelease/   ← beta/rc 等预发布模板 registry
+  registry.json
+  gongwen/
+    manifest.json, README.md, example.md, preview-*.svg, hero-frame-*.svg
 plugins/                ← plugin-registry CI 推送（将来）
 agent-skills/           ← agent-skill-registry CI 推送（将来）
 .github/
@@ -34,6 +38,8 @@ https://presto.c-1o.top/templates/registry.json
 https://presto.c-1o.top/templates/gongwen/manifest.json
 https://presto.c-1o.top/templates/gongwen/preview-1.svg
 https://cdn.presto.c-1o.top/templates/binaries/v1.0.0/gongwen/darwin-arm64  ← CDN 二进制
+https://presto.c-1o.top/templates-prerelease/registry.json                  ← 预发布模板
+https://cdn.presto.c-1o.top/templates-prerelease/binaries/v1.2.1-beta.2/gongwen/darwin-arm64
 https://presto.c-1o.top/plugins/registry.json              ← 将来
 https://presto.c-1o.top/agent-skills/registry.json          ← 将来
 ```
@@ -81,6 +87,12 @@ presto-cdn/
         jiaoan-shicao/
           darwin-arm64
           ...
+  templates-prerelease/
+    binaries/
+      v1.2.1-beta.2/
+        gongwen/
+          darwin-arm64
+          ...
 ```
 
 ### 📋 需要的 GitHub Secrets
@@ -100,11 +112,12 @@ presto-cdn/
 1. 进入 **Actions** → **Sync Binaries to R2 CDN**
 2. 点击 **Run workflow**
 3. 输入版本号（如：`v1.0.0`）
-4. 点击 **Run workflow**
+4. 如需同步 beta/rc，选择 `prerelease` channel
+5. 点击 **Run workflow**
 
 ## 各 registry 的推送约定
 
-- `template-registry` CI 只写 `templates/` 子目录
+- `template-registry` CI 写 `templates/`（生产）和 `templates-prerelease/`（预发布）子目录
 - `plugin-registry` CI 只写 `plugins/` 子目录
 - `agent-skill-registry` CI 只写 `agent-skills/` 子目录
 - 各自不干扰，通过 `target-directory` 参数隔离
