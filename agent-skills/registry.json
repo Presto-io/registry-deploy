@@ -1,11 +1,11 @@
 {
-  "updatedAt": "2026-05-08T17:41:13.877806+00:00",
+  "updatedAt": "2026-05-09T19:11:00.953311+00:00",
   "skills": [
     {
       "name": "presto-gongwen",
       "displayName": "Presto 公文排版",
-      "description": "将任意文档转换为符合公文模板规范的 Markdown 并生成 PDF。支持纯文本、Markdown、Word、PDF 等输入格式。当用户请求「转换成公文格式」「生成公文」「帮我写报告」「整理成文档」「工作总结」「会议纪要」「通知」等时触发此技能。",
-      "version": "1.0.0",
+      "description": "将任意文档转换为符合公文模板规范的 Markdown 并生成 PDF。支持纯文本、Markdown、Word、PDF 等输入格式。当用户请求「转换成公文格式」「生成公文」「帮我写报告」「整理成文档」「工作总结」「会议纪要」「通知」「发言稿」等时触发此技能。",
+      "version": "1.2.0",
       "author": "Presto-io",
       "repo": "Presto-io/presto-skills",
       "path": "presto-gongwen",
@@ -14,9 +14,11 @@
       "keywords": [
         "presto",
         "document",
-        "formatting"
+        "formatting",
+        "gongwen"
       ],
-      "trust": "official"
+      "trust": "official",
+      "hash": "sha256:5de30aef64c4c2320b9796ea3a1096d895324436e007168b2795a08028d525a2"
     }
   ]
 }
