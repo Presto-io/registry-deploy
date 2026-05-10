@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-09T19:33:31.035305+00:00",
+  "updatedAt": "2026-05-10T18:25:52.323159+00:00",
   "skills": [
     {
       "name": "presto-gongwen",
@@ -23,7 +23,7 @@
     {
       "name": "presto-jiaoan-shicao",
       "displayName": "Presto 实操教案",
-      "description": "将课程内容、教学设计、实训安排或项目化教学单元转换为 Presto 实操教案模板 Markdown 并生成横向 A4 PDF。当用户请求「实操教案」「实训教案」「教学活动设计」「职业教育教案」「项目化教学单元」「课程教案表」「把教学内容排成教案表」等时触发此技能。",
+      "description": "将课程内容、教学设计、实训安排或项目化教学单元转换为完整四部分“教学设计方案（二）” Presto Markdown，并生成横向 A4 PDF。当用户请求「实操教案」「实训教案」「教学活动设计」「职业教育教案」「项目化教学单元」「课程教案表」「把教学内容排成教案表」等时触发此技能。",
       "version": "1.0.0",
       "author": "Presto-io",
       "repo": "Presto-io/presto-skills",
@@ -37,7 +37,7 @@
         "gongwen"
       ],
       "trust": "official",
-      "hash": "sha256:2e8f6c54a6ee398126bcce4fbb133140afd9d838ac67af6a95874a1310ab06bb"
+      "hash": "sha256:d65ae1d8962dfed2189009b5deb483846d80f78c416f264e96277764d920233c"
     }
   ]
 }
