@@ -208,6 +208,44 @@ jobs:
           mv registry.json.new registry.json
           rm registry.json.backup registry.previous.json
 
+      - name: Verify CDN URLs
+        env:
+          TEMPLATE: ${{ steps.release.outputs.template }}
+          REGISTRY_DIR: ${{ steps.release.outputs.registry_dir }}
+        run: |
+          echo "Verifying CDN URLs for ${TEMPLATE}"
+          cd "${REGISTRY_DIR}"
+
+          jq -r --arg template "$TEMPLATE" '
+            .templates[] | select(.name == $template) | .platforms
+            | to_entries[]
+            | [.key, .value.cdn_url, .value.sha256] | @tsv
+          ' registry.json \
+            | while IFS=$'\t' read -r platform url expected_sha; do
+                echo "Testing: ${platform} ${url}"
+                tmp_file="$(mktemp)"
+                if ! curl -fsSL "$url" -o "$tmp_file"; then
+                  echo "  FAILED: download failed"
+                  echo "$url" >> /tmp/failed_urls.txt
+                  rm -f "$tmp_file"
+                  continue
+                fi
+
+                actual_sha="$(sha256sum "$tmp_file" | awk '{print $1}')"
+                rm -f "$tmp_file"
+                if [ "$actual_sha" = "$expected_sha" ]; then
+                  echo "  OK sha256=${actual_sha}"
+                else
+                  echo "  FAILED: expected ${expected_sha}, got ${actual_sha}"
+                  echo "$url" >> /tmp/failed_urls.txt
+                fi
+              done
+
+          if [ -f /tmp/failed_urls.txt ]; then
+            cat /tmp/failed_urls.txt
+            exit 1
+          fi
+
       - name: Commit and push changes
         env:
           TEMPLATE: ${{ steps.release.outputs.template }}
@@ -221,31 +259,6 @@ jobs:
           git add "${REGISTRY_DIR}/registry.json"
           git diff --cached --quiet || git commit -m "chore: sync ${CHANNEL} ${TEMPLATE} binaries to R2 for v${VERSION}"
           git push
-
-      - name: Verify CDN URLs
-        env:
-          TEMPLATE: ${{ steps.release.outputs.template }}
-          REGISTRY_DIR: ${{ steps.release.outputs.registry_dir }}
-        run: |
-          echo "Verifying CDN URLs for ${TEMPLATE}"
-          cd "${REGISTRY_DIR}"
-
-          jq -r --arg template "$TEMPLATE" '.templates[] | select(.name == $template) | .platforms[].cdn_url' registry.json \
-            | while read -r url; do
-                echo "Testing: $url"
-                status="$(curl -sI "$url" | head -1)"
-                if echo "$status" | grep -q "200\|302"; then
-                  echo "  OK"
-                else
-                  echo "  FAILED: $status"
-                  echo "$url" >> /tmp/failed_urls.txt
-                fi
-              done
-
-          if [ -f /tmp/failed_urls.txt ]; then
-            cat /tmp/failed_urls.txt
-            exit 1
-          fi
 
       - name: Cleanup
         if: always()
