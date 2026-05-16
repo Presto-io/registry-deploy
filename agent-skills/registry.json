@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-12T02:23:20.676731+00:00",
+  "updatedAt": "2026-05-16T16:06:22.555222+00:00",
   "skills": [
     {
       "name": "presto-gongwen",
@@ -24,7 +24,7 @@
       "name": "presto-jiaoan-jihua",
       "displayName": "Presto 授课计划",
       "description": "将课程安排、教学任务、学习环节或零散教学内容转换为 Presto `jiaoan-jihua` 授课进度计划表 Markdown，并生成 A4 PDF。当用户请求「授课计划」「教学进度计划」「课程进度表」「周次安排」「排课时」「把教学内容排成授课进度表」等时触发此技能。",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "author": "Presto-io",
       "repo": "Presto-io/presto-skills",
       "path": "presto-jiaoan-jihua",
@@ -37,7 +37,7 @@
         "gongwen"
       ],
       "trust": "official",
-      "hash": "sha256:b8b4d1d1bca1ed89fa18e5656d1c0f0d6393d26738705365fe47772b927df331"
+      "hash": "sha256:2a2eca95024b776673b11e735ce940236d05584b7f8621e5b143055713a9a6a5"
     },
     {
       "name": "presto-jiaoan-shicao",
