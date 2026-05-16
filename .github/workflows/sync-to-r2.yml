@@ -248,16 +248,21 @@ jobs:
 
       - name: Commit and push changes
         env:
+          CI_GPG_KEY_ID: ${{ vars.CI_GPG_KEY_ID }}
+          CI_GPG_PASSPHRASE: ${{ secrets.CI_GPG_PASSPHRASE }}
+          CI_GPG_PRIVATE_KEY: ${{ secrets.CI_GPG_PRIVATE_KEY }}
+          CI_GIT_USER_EMAIL: ${{ vars.CI_GIT_USER_EMAIL }}
+          CI_GIT_USER_NAME: ${{ vars.CI_GIT_USER_NAME }}
           TEMPLATE: ${{ steps.release.outputs.template }}
           VERSION: ${{ steps.release.outputs.version }}
           REGISTRY_DIR: ${{ steps.release.outputs.registry_dir }}
           CHANNEL: ${{ steps.release.outputs.channel }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git add "${REGISTRY_DIR}/registry.json"
-          git diff --cached --quiet || git commit -m "chore: sync ${CHANNEL} ${TEMPLATE} binaries to R2 for v${VERSION}"
+          if ! git diff --cached --quiet; then
+            bash scripts/ci/setup-git-signing.sh
+            git commit -m "chore: sync ${CHANNEL} ${TEMPLATE} binaries to R2 for v${VERSION}"
+          fi
           git push
 
       - name: Cleanup
