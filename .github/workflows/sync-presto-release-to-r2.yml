@@ -1,0 +1,187 @@
+name: Sync Presto Release to R2 CDN
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Presto release tag to sync (e.g. v0.8.1)'
+        required: true
+        type: string
+      source_repo:
+        description: 'Source release repository'
+        required: false
+        default: 'Presto-io/Presto'
+        type: string
+      r2_prefix:
+        description: 'R2 path prefix'
+        required: false
+        default: 'releases/presto'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sync-presto-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate inputs
+        id: input
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_SOURCE_REPO: ${{ inputs.source_repo }}
+          INPUT_R2_PREFIX: ${{ inputs.r2_prefix }}
+        run: |
+          set -euo pipefail
+
+          tag="${INPUT_TAG}"
+          source_repo="${INPUT_SOURCE_REPO}"
+          r2_prefix="${INPUT_R2_PREFIX%/}"
+
+          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release tag: ${tag}" >&2
+            exit 1
+          fi
+          if [[ ! "${source_repo}" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo "Invalid source repo: ${source_repo}" >&2
+            exit 1
+          fi
+          if [[ ! "${r2_prefix}" =~ ^[a-z0-9][a-z0-9._/-]*[a-z0-9]$ ]]; then
+            echo "Invalid R2 prefix: ${r2_prefix}" >&2
+            exit 1
+          fi
+
+          {
+            echo "tag=${tag}"
+            echo "source_repo=${source_repo}"
+            echo "r2_prefix=${r2_prefix}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq unzip
+
+      - name: Setup Cloudflare R2 CLI
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "${R2_ACCESS_KEY_ID}"
+          test -n "${R2_SECRET_ACCESS_KEY}"
+          test -n "${R2_ACCOUNT_ID}"
+
+          curl -fsSLO https://downloads.rclone.org/rclone-current-linux-amd64.zip
+          unzip -q rclone-current-linux-amd64.zip
+          sudo mv rclone-*-linux-amd64/rclone /usr/local/bin/
+          sudo chmod +x /usr/local/bin/rclone
+          rm -rf rclone-*
+
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf << EOF
+          [r2]
+          type = s3
+          provider = Cloudflare
+          access_key_id = ${R2_ACCESS_KEY_ID}
+          secret_access_key = ${R2_SECRET_ACCESS_KEY}
+          endpoint = https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
+          acl = public-read
+          no_check_bucket = true
+          EOF
+
+      - name: Download Presto release assets
+        env:
+          GH_TOKEN: ${{ secrets.PRESTO_PAT || github.token }}
+          SOURCE_REPO: ${{ steps.input.outputs.source_repo }}
+          TAG: ${{ steps.input.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/presto-release
+
+          gh release view "${TAG}" --repo "${SOURCE_REPO}" --json tagName,isDraft,isPrerelease,assets \
+            --jq '. as $release | if $release.isDraft then error("draft release is not syncable") else $release end' \
+            > /tmp/presto-release/release.json
+
+          gh release download "${TAG}" --repo "${SOURCE_REPO}" --dir /tmp/presto-release/assets \
+            --pattern 'Presto-*' \
+            --pattern 'checksums.txt'
+
+          test -s /tmp/presto-release/assets/checksums.txt
+          asset_count="$(find /tmp/presto-release/assets -type f -name 'Presto-*' | wc -l | tr -d ' ')"
+          if [ "${asset_count}" = "0" ]; then
+            echo "No Presto release assets downloaded" >&2
+            exit 1
+          fi
+
+      - name: Verify release checksums
+        working-directory: /tmp/presto-release/assets
+        run: |
+          set -euo pipefail
+          sha256sum -c checksums.txt
+
+      - name: Build CDN manifest
+        env:
+          CDN_DOMAIN: ${{ secrets.CDN_DOMAIN || 'cdn.presto.c-1o.top' }}
+          R2_PREFIX: ${{ steps.input.outputs.r2_prefix }}
+          SOURCE_REPO: ${{ steps.input.outputs.source_repo }}
+          TAG: ${{ steps.input.outputs.tag }}
+        run: |
+          set -euo pipefail
+          cd /tmp/presto-release/assets
+
+          jq -n \
+            --arg tag "${TAG}" \
+            --arg sourceRepo "${SOURCE_REPO}" \
+            --arg cdnBase "https://${CDN_DOMAIN}/${R2_PREFIX}/${TAG}" \
+            --arg githubBase "https://github.com/${SOURCE_REPO}/releases/download/${TAG}" \
+            '{tag: $tag, source_repo: $sourceRepo, cdn_base_url: $cdnBase, github_base_url: $githubBase, assets: []}' \
+            > /tmp/presto-release/manifest.json
+
+          while read -r sha filename; do
+            filename="${filename#\*}"
+            [ -f "${filename}" ] || continue
+            size="$(stat -c '%s' "${filename}")"
+            tmp="$(mktemp)"
+            jq \
+              --arg name "${filename}" \
+              --arg sha256 "${sha}" \
+              --argjson size "${size}" \
+              --arg cdnBase "https://${CDN_DOMAIN}/${R2_PREFIX}/${TAG}" \
+              --arg githubBase "https://github.com/${SOURCE_REPO}/releases/download/${TAG}" \
+              '.assets += [{name: $name, size: $size, sha256: $sha256, cdn_url: ($cdnBase + "/" + $name), github_url: ($githubBase + "/" + $name)}]' \
+              /tmp/presto-release/manifest.json > "${tmp}"
+            mv "${tmp}" /tmp/presto-release/manifest.json
+          done < checksums.txt
+
+      - name: Upload assets to R2
+        env:
+          R2_BUCKET: ${{ secrets.R2_BUCKET || 'presto-cdn' }}
+          R2_PREFIX: ${{ steps.input.outputs.r2_prefix }}
+          TAG: ${{ steps.input.outputs.tag }}
+        run: |
+          set -euo pipefail
+          cd /tmp/presto-release
+
+          for asset in assets/* manifest.json release.json; do
+            name="$(basename "${asset}")"
+            rclone copyto "${asset}" "r2:${R2_BUCKET}/${R2_PREFIX}/${TAG}/${name}" --progress
+          done
+
+      - name: Verify CDN URLs
+        env:
+          CDN_DOMAIN: ${{ secrets.CDN_DOMAIN || 'cdn.presto.c-1o.top' }}
+          R2_PREFIX: ${{ steps.input.outputs.r2_prefix }}
+          TAG: ${{ steps.input.outputs.tag }}
+        run: |
+          set -euo pipefail
+          cd /tmp/presto-release
+
+          jq -r --arg base "https://${CDN_DOMAIN}/${R2_PREFIX}/${TAG}" '
+            [$base + "/manifest.json", $base + "/release.json"] + [.assets[].cdn_url] | .[]
+          ' manifest.json | while read -r url; do
+            echo "Checking ${url}"
+            curl -fsSI "${url}" >/dev/null
+          done
