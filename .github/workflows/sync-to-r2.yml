@@ -84,7 +84,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout registry-deploy
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -122,24 +122,43 @@ jobs:
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
           SOURCE_REPO: ${{ secrets.SOURCE_REPO || 'Presto-io/presto-official-templates' }}
         run: |
+          set -euo pipefail
+
           echo "Downloading ${TEMPLATE} binaries from release ${RELEASE_TAG}"
-          mkdir -p /tmp/binaries
-
           RELEASE_URL="https://api.github.com/repos/${SOURCE_REPO}/releases/tags/${RELEASE_TAG}"
-          curl -fsSL "${RELEASE_URL}" \
-            | jq -r --arg prefix "presto-template-${TEMPLATE}-" '.assets[] | select(.name | startswith($prefix)) | .browser_download_url' \
-            | while read -r url; do
-                filename="$(basename "$url")"
-                echo "Downloading ${filename}"
-                curl -fL -o "/tmp/binaries/${filename}" "$url"
-              done
+          MAX_ATTEMPTS=6
 
-          count="$(find /tmp/binaries -type f | wc -l | tr -d ' ')"
-          if [ "${count}" = "0" ]; then
-            echo "No binaries found for ${TEMPLATE} in ${RELEASE_TAG}" >&2
-            exit 1
-          fi
-          echo "Downloaded ${count} binaries"
+          for attempt in $(seq 1 "${MAX_ATTEMPTS}"); do
+            rm -rf /tmp/binaries
+            mkdir -p /tmp/binaries
+
+            if curl -fsSL "${RELEASE_URL}" -o /tmp/release.json; then
+              jq -r --arg prefix "presto-template-${TEMPLATE}-" \
+                '.assets[] | select(.name | startswith($prefix)) | .browser_download_url' \
+                /tmp/release.json > /tmp/binary-urls.txt
+
+              while read -r url; do
+                [ -n "${url}" ] || continue
+                filename="$(basename "${url}")"
+                echo "Downloading ${filename}"
+                curl -fL -o "/tmp/binaries/${filename}" "${url}"
+              done < /tmp/binary-urls.txt
+            fi
+
+            count="$(find /tmp/binaries -type f | wc -l | tr -d ' ')"
+            if [ "${count}" -gt 0 ]; then
+              echo "Downloaded ${count} binaries"
+              break
+            fi
+
+            if [ "${attempt}" -eq "${MAX_ATTEMPTS}" ]; then
+              echo "No binaries found for ${TEMPLATE} in ${RELEASE_TAG} after ${MAX_ATTEMPTS} attempts" >&2
+              exit 1
+            fi
+
+            echo "Release assets are not available yet (attempt ${attempt}/${MAX_ATTEMPTS}); retrying in 15 seconds"
+            sleep 15
+          done
 
       - name: Upload binaries to R2
         env:
